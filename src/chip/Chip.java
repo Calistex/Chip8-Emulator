@@ -609,6 +609,10 @@ public class Chip {
     }
 
     public void loadProgram(File file) {
+        if(file == null){
+            System.err.println("File not found");
+            System.exit(0);
+        }
         try (DataInputStream input = new DataInputStream(new FileInputStream(file))) {
 
             int offset = 0;
