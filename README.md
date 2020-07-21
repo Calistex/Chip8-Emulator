@@ -1,5 +1,7 @@
 # Chip8-Emulator
 
+![alt text](https://github.com/Calistex/Chip8-Emulator/blob/master/screenshot.jpg)
+
 Chip8 Emulator written in Java following [this](https://www.youtube.com/playlist?list=PL5PyurErl12czoLyYD8za68d61T_OZsP2) tutorial.
 
 A bit thank to [Johnnei](https://github.com/Johnnei) for his detailed explanation.
@@ -13,3 +15,4 @@ The video output is handled by Swing. Sound is working.
 
 ## Roadmap
 - Changing game from the emulator menu
+- Enhancing emulation (some games are slow or badly emulated)
