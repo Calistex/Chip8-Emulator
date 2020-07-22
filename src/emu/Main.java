@@ -86,7 +86,7 @@ public class Main extends Thread {
                     clip.open(stream);
                     clip.start();
                 } catch (Exception e) {
-                    //whatevers
+                    e.printStackTrace();
                 }
             }
         }.start();
