@@ -23,8 +23,15 @@ public class Main extends Thread {
     public void run() {
         while (true) {
             if (!frame.isEmulationPaused()) {
+                if(frame.resetGame()){
+                    chip8.reset();
+                    frame.setGameAsReset();
+                    System.out.println("Game Reset");
+                }
+
                 chip8.setKeyBuffer(frame.getKeyBuffer());
                 chip8.run();
+
                 if (chip8.needsSound()) {
                     //Qui dovrebbe fare BEEP
                     System.out.println("BEEP!");
@@ -37,6 +44,7 @@ public class Main extends Thread {
                     frame.repaint();
                     chip8.removeDrawFlag();
                 }
+
                 try {
                     Thread.sleep(4);
                 } catch (InterruptedException e) {

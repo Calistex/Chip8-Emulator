@@ -16,6 +16,7 @@ public class ChipFrame extends JFrame implements KeyListener {
     private File gameFile;
     private boolean audioEnabled;
     private boolean emulationPaused;
+    private boolean resetGame;
 
     public ChipFrame(Chip chip) {
         setPreferredSize(new Dimension(620, 320));
@@ -49,7 +50,7 @@ public class ChipFrame extends JFrame implements KeyListener {
         menu.addSeparator();
 
         JMenuItem pauseMenuItem = new JMenuItem("Pause/Resume",
-                KeyEvent.VK_T);
+                KeyEvent.VK_P);
         pauseMenuItem.addActionListener(
                 (event) -> emulationPaused = !emulationPaused
         );
@@ -57,6 +58,16 @@ public class ChipFrame extends JFrame implements KeyListener {
         pauseMenuItem.setAccelerator(KeyStroke.getKeyStroke(
                 KeyEvent.VK_P, InputEvent.ALT_MASK));
         menu.add(pauseMenuItem);
+
+        JMenuItem resetMenuItem = new JMenuItem("Reset",
+                KeyEvent.VK_T);
+        resetMenuItem.addActionListener(
+                (event) -> resetGame = true
+        );
+        resetMenuItem.setMnemonic(KeyEvent.VK_T);
+        resetMenuItem.setAccelerator(KeyStroke.getKeyStroke(
+                KeyEvent.VK_T, InputEvent.ALT_MASK));
+        menu.add(resetMenuItem);
 
         JMenuItem exitMenuItem = new JMenuItem("Exit",
                 KeyEvent.VK_T);
@@ -175,5 +186,13 @@ public class ChipFrame extends JFrame implements KeyListener {
 
     public boolean isEmulationPaused() {
         return emulationPaused;
+    }
+
+    public boolean resetGame(){
+        return resetGame;
+    }
+
+    public void setGameAsReset(){
+        resetGame = false;
     }
 }

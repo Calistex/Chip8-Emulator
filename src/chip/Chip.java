@@ -59,6 +59,31 @@ public class Chip {
         loadFontset();
     }
 
+    public void reset() {
+        V = new char[16];
+        I = 0x0;
+
+        //Il program counter inizia a 0x200 (512 bytes)
+        //perché i primi 512 bytes sono occupati dall'interprete
+        //stesso di Chip8 nella macchina.
+        //I programmi quindi inizieranno qui
+        pc = 0x200;
+
+        stack = new char[16];
+        stackPointer = 0;
+
+        delay_timer = 0;
+        sound_timer = 0;
+
+        keys = new byte[16];
+
+        //Dimensioni dello schermo
+        display = new byte[64 * 32];
+        needRedraw = false;
+
+        doSound = false;
+    }
+
     public void run() {
         //Otteniamo l'Opcode
         /*
