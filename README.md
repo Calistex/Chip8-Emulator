@@ -8,6 +8,17 @@ A bit thank to [Johnnei](https://github.com/Johnnei) for his detailed explanatio
 
 The video output is handled by Swing. Sound is working.
 
+## Controls
+Every game is controlled by different keys
+
+`1 | 2 | 3 | 4`
+
+`Q | W | E | R`
+
+`A | S | D | F`
+
+`Z | X | C | V`
+
 ## Added features
 - File chooser when the emulator starts
 - Pause button to pause and resume the game (Alt + P)
