@@ -334,7 +334,7 @@ public class Chip {
                             System.out.print("Carry! ");
                         } else {
                             V[0xF] = 0;
-                            System.out.print("No carry ");
+                            System.out.print("No carry. ");
                         }
                         V[x] = (char) ((V[x] + V[y]) & 0xFF);
 
