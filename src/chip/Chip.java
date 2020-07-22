@@ -108,7 +108,8 @@ public class Chip {
 
                     case 0x00EE: //00EE: Returns from a subroutine.
                         stackPointer--;
-                        pc = (char) (stack[stackPointer] + 2);
+                        pc = stack[stackPointer];
+                        pc += 2;
                         System.out.println("Returning to " + Integer.toHexString(pc).toUpperCase());
                         break;
 
@@ -192,7 +193,7 @@ public class Chip {
             case 0x7000: { //7XNN: Adds NN to VX.
                 int x = (opcode & 0x0F00) >> 8;
                 int nn = (opcode & 0x00FF);
-                //Facciamo lo shift per evitare l'overflow
+                //Facciamo l'& per evitare l'overflow
                 V[x] = (char) ((V[x] + nn) & 0xFF);
                 pc += 2;
                 System.out.println("Adding " + nn + " to V[" + x + "] = " + (int) V[x]);
@@ -444,15 +445,22 @@ public class Chip {
                     }
 
                     case 0x00A: { //FX0A: A key press is awaited, and then stored in VX.
+                        boolean keyPress = false;
+
                         int x = (opcode & 0x0F00) >> 8;
                         for (int i = 0; i < keys.length; i++) {
                             if (keys[i] == 1) {
                                 V[x] = (char) i;
-                                pc += 2;
+                                keyPress = true;
                                 break;
                             }
                         }
 
+                        if (!keyPress){
+                            return;
+                        }
+
+                        pc += 2;
                         System.out.println("Awaiting key press to be stored in V[" + x + "]");
                         break;
                     }
@@ -473,9 +481,9 @@ public class Chip {
                         break;
                     }
 
-                    case 0x01E: { //FX1E: Adds VX to I. VF is not affected.
+                    case 0x01E: { //FX1E: Adds VX to I. VF is not affected. (or maybe yes?)
                         int x = (opcode & 0x0F00) >> 8;
-                        //V[0xF] = (char) ((I + V[x] > 0xfff) ? 1 : 0);
+                        V[0xF] = (char) ((I + V[x] > 0xfff) ? 1 : 0);
                         I = (char) (I + V[x]);
                         System.out.println("Adding V[" + x + "] with the value of " + (int) V[x] + " to I");
                         pc += 2;
@@ -516,7 +524,9 @@ public class Chip {
                         for (int i = 0; i < x; i++) {
                             memory[I + i] = V[i];
                         }
-                        //I += x + 1;
+
+                        //Nell'interprete originale, I viene modificato
+                        I += x + 1;
                         System.out.println("Storing V[0] to V[" + x + "] to the values of memory[0x" + Integer.toHexString(I & 0xFFFF).toUpperCase() + "]");
                         pc += 2;
                         break;
@@ -549,9 +559,9 @@ public class Chip {
         }
 
         if (sound_timer > 0)
-            sound_timer--;
+            --sound_timer;
         if (delay_timer > 0)
-            delay_timer--;
+            --delay_timer;
 
         if (sound_timer == 1) {
             doSound = true;
