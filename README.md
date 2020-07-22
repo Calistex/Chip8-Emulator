@@ -1,6 +1,6 @@
 # Chip8-Emulator
 
-![alt text](https://github.com/Calistex/Chip8-Emulator/blob/master/screenshot.jpg)
+![alt text](https://github.com/Calistex/Chip8-Emulator/blob/master/screenshot.png)
 
 Chip8 Emulator written in Java following [this](https://www.youtube.com/playlist?list=PL5PyurErl12czoLyYD8za68d61T_OZsP2) tutorial.
 
