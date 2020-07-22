@@ -9,7 +9,6 @@ import java.io.File;
 
 public class ChipFrame extends JFrame implements KeyListener {
 
-    private static final long serialVersionUID = 1L;
     private ChipPanel panel;
     private int[] keyBuffer;
     private int[] keyIdToKey;

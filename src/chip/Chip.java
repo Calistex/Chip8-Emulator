@@ -12,7 +12,7 @@ public class Chip {
     private char[] V;
 
     //Puntatore agli indirizzi
-    private char I;
+    private short I;
 
     //Program counter
     private char pc;
@@ -20,8 +20,8 @@ public class Chip {
     private char[] stack;
     private int stackPointer;
 
-    private int delay_timer;
-    private int sound_timer;
+    private byte delay_timer;
+    private byte sound_timer;
 
     private byte[] keys;
 
@@ -126,21 +126,22 @@ public class Chip {
                         for (int i = 0; i < display.length; i++) {
                             display[i] = 0;
                         }
-                        needRedraw = true;
+
                         System.out.println("Screen cleared");
+                        needRedraw = true;
                         pc += 2;
                         break;
 
                     case 0x00EE: //00EE: Returns from a subroutine.
                         stackPointer--;
                         pc = stack[stackPointer];
-                        pc += 2;
+
                         System.out.println("Returning to " + Integer.toHexString(pc).toUpperCase());
+                        pc += 2;
                         break;
 
                     default:
-                        System.err.println("Unimplemented Opcode!");
-                        System.exit(0);
+                        unsupportedOpcode();
                         break;
                 }
                 break;
@@ -149,6 +150,7 @@ public class Chip {
             case 0x1000: { //1NNN: Jumps to address NNN.
                 int nnn = opcode & 0x0FFF;
                 pc = (char) nnn;
+
                 System.out.println("Jumping to " + Integer.toHexString(pc).toUpperCase());
                 break;
             }
@@ -158,6 +160,7 @@ public class Chip {
                 stackPointer++;
                 //Prendiamo l'indirizzo dagli ultimi 3 nibbles (000)
                 pc = (char) (opcode & 0x0FFF);
+
                 System.out.println("Calling " + Integer.toHexString(pc).toUpperCase());
                 break;
             }
@@ -188,15 +191,63 @@ public class Chip {
                 break;
             }
 
-            case 0x5000: { //5XY0: Skips the next instruction if VX equals VY..
-                int x = (opcode & 0x0F00) >> 8;
-                int y = (opcode & 0x00F0) >> 4;
-                if (V[x] == V[y]) {
-                    pc += 4;
-                    System.out.println("Skipping next instruction (V[" + x + "] == (V[" + y + "])");
-                } else {
-                    pc += 2;
-                    System.out.println("Not skipping next instruction (V[" + x + "] != (V[" + y + "])");
+            case 0x5000: {
+                switch (opcode & 0x000F){
+                    case 0x0000: { //5XY0: Skips the next instruction if VX equals VY.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+                        if (V[x] == V[y]) {
+                            pc += 4;
+                            System.out.println("Skipping next instruction (V[" + x + "] == (V[" + y + "])");
+                        } else {
+                            pc += 2;
+                            System.out.println("Not skipping next instruction (V[" + x + "] != (V[" + y + "])");
+                        }
+                        break;
+                    }
+
+                    case 0x0001: { //5XY1: COSMAC ELF: Skip the next instruction if register VX is greater than VY.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+                        if (V[x] > V[y]) {
+                            pc += 4;
+                            System.out.println("COSMAC ELF: Skipping next instruction (V[" + x + "] > (V[" + y + "])");
+                        } else {
+                            pc += 2;
+                            System.out.println("COSMAC ELF: Not skipping next instruction (V[" + x + "] <= (V[" + y + "])");
+                        }
+                        break;
+                    }
+
+                    case 0x0002: { //5XY2: COSMAC ELF: Skip the next instruction if register VX is less than VY.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+                        if (V[x] < V[y]) {
+                            pc += 4;
+                            System.out.println("COSMAC ELF: Skipping next instruction (V[" + x + "] < (V[" + y + "])");
+                        } else {
+                            pc += 2;
+                            System.out.println("COSMAC ELF: Not skipping next instruction (V[" + x + "] >= (V[" + y + "])");
+                        }
+                        break;
+                    }
+
+                    case 0x0003: { //5XY3: COSMAC ELF: Skip the next instruction if register VX does not equal VY.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+                        if (V[x] != V[y]) {
+                            pc += 4;
+                            System.out.println("COSMAC ELF: Skipping next instruction (V[" + x + "] != (V[" + y + "])");
+                        } else {
+                            pc += 2;
+                            System.out.println("COSMAC ELF: Not skipping next instruction (V[" + x + "] == (V[" + y + "])");
+                        }
+                        break;
+                    }
+
+                    default:
+                        unsupportedOpcode();
+                        break;
                 }
                 break;
             }
@@ -209,9 +260,10 @@ public class Chip {
                 int x = (opcode & 0x0F00) >> 8;
                 //Inseriamo NN come valore di V[indice]
                 V[x] = (char) (opcode & 0x00FF);
+
                 //Avanziamo il programma di due posizioni
-                pc += 2;
                 System.out.println("Setting V[" + x + "] to " + (int) V[x]);
+                pc += 2;
                 break;
             }
 
@@ -220,8 +272,9 @@ public class Chip {
                 int nn = (opcode & 0x00FF);
                 //Facciamo l'& per evitare l'overflow
                 V[x] = (char) ((V[x] + nn) & 0xFF);
-                pc += 2;
+
                 System.out.println("Adding " + nn + " to V[" + x + "] = " + (int) V[x]);
+                pc += 2;
                 break;
             }
 
@@ -235,6 +288,7 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
                         V[x] = V[y];
+
                         System.out.println("Setting V[" + x + "] to the value of V[" + y + "]");
                         pc += 2;
                         break;
@@ -244,8 +298,9 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
                         V[x] = (char) ((V[x] | V[y]) & 0xFF);
-                        pc += 2;
+
                         System.out.println("Setting V[" + x + "] to the value of V[" + x + "] OR V[" + y + "]");
+                        pc += 2;
                         break;
                     }
 
@@ -253,8 +308,9 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
                         V[x] = (char) (V[x] & V[y]);
-                        pc += 2;
+
                         System.out.println("Setting V[" + x + "] to the value of V[" + x + "] AND V[" + y + "]");
+                        pc += 2;
                         break;
                     }
 
@@ -262,8 +318,9 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
                         V[x] = (char) ((V[x] ^ V[y]) & 0xFF);
-                        pc += 2;
+
                         System.out.println("Setting V[" + x + "] to the value of V[" + x + "] XOR V[" + y + "]");
+                        pc += 2;
                         break;
                     }
 
@@ -274,14 +331,15 @@ public class Chip {
                         //allora bisogna impostare il flag V[0x0F] a 1.
                         if (V[y] > 0xFF - V[x]) {
                             V[0xF] = 1;
-                            System.out.println("Carry!");
+                            System.out.print("Carry! ");
                         } else {
                             V[0xF] = 0;
-                            System.out.println("No carry");
+                            System.out.print("No carry ");
                         }
                         V[x] = (char) ((V[x] + V[y]) & 0xFF);
-                        pc += 2;
+
                         System.out.println("Adding V[" + x + "] to V[" + y + "] = " + ((V[x] + V[y]) & 0xFF) + ", apply Carry if needed");
+                        pc += 2;
                         break;
                     }
 
@@ -298,8 +356,9 @@ public class Chip {
                             System.out.print("Borrow. ");
                         }
                         V[x] = (char) ((V[x] - V[y]) & 0xFF);
-                        pc += 2;
+
                         System.out.println("Setting V[" + x + "] to the value of V[" + x + "] - V[" + y + "]");
+                        pc += 2;
                         break;
                     }
 
@@ -309,8 +368,9 @@ public class Chip {
                         //(Ovvero quello più a destra, usando & 0x1;
                         V[0xF] = (char) (V[x] & 0x1);
                         V[x] = (char) (V[x] >> 1);
-                        pc += 2;
+
                         System.out.println("Store the LSB of V[" + x + "] in VF, then V[" + x + "] >> 1");
+                        pc += 2;
                         break;
                     }
 
@@ -326,9 +386,9 @@ public class Chip {
                             System.out.print("Borrow. ");
                         }
                         V[x] = (char) ((V[y] - V[x]) & 0xFF);
-                        pc += 2;
 
                         System.out.println("Setting V[" + x + "] to the value of V[" + y + "] - V[" + x + "]");
+                        pc += 2;
                         break;
                     }
 
@@ -338,36 +398,98 @@ public class Chip {
                         //(Ovvero quello più a sinistra, usando & 0x80;
                         V[0xF] = (char) (V[x] & 0x80);
                         V[x] = (char) (V[x] << 1);
-                        pc += 2;
+
                         System.out.println("Store the MSB of V[" + x + "] in VF, then V[" + x + "] << 1");
+                        pc += 2;
                         break;
                     }
 
                     default:
-                        System.err.println("Unsupported Opcode!");
-                        System.exit(0);
+                        unsupportedOpcode();
                         break;
                 }
                 break;
             }
 
-            case 0x9000: { //9XY0: 	Skips the next instruction if VX doesn't equal VY.
-                int x = (opcode & 0x0F00) >> 8;
-                int y = (opcode & 0x00F0) >> 4;
-                if (V[x] != V[y]) {
-                    pc += 4;
-                    System.out.println("Skipping next instruction (V[" + x + "] != (V[" + y + "])");
-                } else {
-                    pc += 2;
-                    System.out.println("Not skipping next instruction (V[" + x + "] == (V[" + y + "])");
+            case 0x9000: {
+                switch (opcode & 0x000F) {
+                    case 0x0000: { //9XY0: 	Skips the next instruction if VX doesn't equal VY.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+                        if (V[x] != V[y]) {
+                            pc += 4;
+                            System.out.println("Skipping next instruction (V[" + x + "] != (V[" + y + "])");
+                        } else {
+                            pc += 2;
+                            System.out.println("Not skipping next instruction (V[" + x + "] == (V[" + y + "])");
+                        }
+                        break;
+                    }
+
+                    case 0x0001: { //9XY1: COSMAC ELF: Set VF, VX equal to VX multipled by VY where VF is the most significant byte of a 16bit word.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+
+                        char z = (char) (V[x] * V[y]);
+
+                        V[x] = (char) (z & 0xFF);
+                        V[0xF] = (char) ((z >> 8) & 0xFF);
+
+                        System.out.println("COSMAC ELF: Setting V[" + x + "] as (V[" + x + "] * (V[" + y + "]), and V[0xF] as the most significant byte of the result");
+                        pc += 2;
+                        break;
+                    }
+
+                    case 0x0002: { //9XY2: COSMAC ELF: Set VX equal to VX divided by VY. VF is set to the remainder.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+
+                        V[0xF] =(char) (V[x] % V[y]);
+                        V[x] = (char) (V[x] / V[y]);
+
+                        System.out.println("COSMAC ELF: Setting V[" + x + "] as (V[" + x + "] / (V[" + y + "]), and V[0xF] as the remainder");
+                        pc += 2;
+                        break;
+                    }
+
+                    case 0x0003: { //9XY3: COSMAC ELF: Let VX, VY be treated as a 16bit word with VX the most significant part. Convert that word to BCD and store the 5 digits at memory location I through I+4. I does not change.
+                        int x = (opcode & 0x0F00) >> 8;
+                        int y = (opcode & 0x00F0) >> 4;
+
+                        int word =  ((V[x] << 8) | V[y]);
+
+                        int one = (word - (word % 10000)) / 10000;
+                        word -= one * 10000;
+                        int two = (word - (word % 1000)) / 1000;
+                        word -= two * 1000;
+                        int three = (word - (word % 100)) / 100;
+                        word -= three * 100;
+                        int four = (word - (word % 10)) / 10;
+                        word -= four * 10;
+
+                        memory[I] = (char) one;
+                        memory[I + 1] = (char) two;
+                        memory[I + 2] = (char) three;
+                        memory[I + 3] = (char) four;
+                        memory[I + 4] = (char) word;
+
+                        System.out.println("COSMAC ELF: Storing Binary-Coded Decimal (V[" + x + "] << 8 |  = V[" + y + "]) = " + word + " as {" + one + ", " + two + ", " + three + ", " + four + ", " + word + "}");
+                        pc += 2;
+                        break;
+                    }
+
+                    default:
+                        unsupportedOpcode();
+                        break;
                 }
                 break;
             }
 
             case 0xA000: { //ANNN: Sets I to the address NNN.
-                I = (char) (opcode & 0x0FFF);
-                pc += 2;
+                I = (short) (opcode & 0x0FFF);
+
                 System.out.println("Set I to " + Integer.toHexString(I).toUpperCase());
+                pc += 2;
                 break;
             }
 
@@ -375,6 +497,7 @@ public class Chip {
                 int nnn = (char) (opcode & 0x0FFF);
                 int extra = V[0] & 0xFF;
                 pc = (char) (extra + nnn);
+
                 System.out.println("Jump to " + nnn + " + " + V[0]);
                 break;
             }
@@ -384,8 +507,9 @@ public class Chip {
                 int nn = (opcode & 0x00FF);
                 int randomNumber = new Random().nextInt(255) & nn;
                 V[x] = (char) randomNumber;
-                pc += 2;
+
                 System.out.println("V[" + x + "] has been set to (randomised) " + randomNumber);
+                pc += 2;
                 break;
             }
 
@@ -418,9 +542,10 @@ public class Chip {
                         }
                     }
                 }
+
+                System.out.println("Drawing at V[" + ((opcode & 0x0F00) >> 8) + "] = " + x + ", V[" + ((opcode & 0x00F0) >> 4) + "] = " + y);
                 pc += 2;
                 needRedraw = true;
-                System.out.println("Drawing at V[" + ((opcode & 0x0F00) >> 8) + "] = " + x + ", V[" + ((opcode & 0x00F0) >> 4) + "] = " + y);
                 break;
             }
 
@@ -452,8 +577,7 @@ public class Chip {
                         break;
 
                     default:
-                        System.err.println("Unsupported Opcode!");
-                        System.exit(0);
+                        unsupportedOpcode();
                         break;
                 }
                 break;
@@ -464,35 +588,31 @@ public class Chip {
                     case 0x007: { //FX07: Sets VX to the value of the delay timer.
                         int x = (opcode & 0x0F00) >> 8;
                         V[x] = (char) delay_timer;
+
                         System.out.println("Setting V[" + x + "] to delay_timer value " + delay_timer);
                         pc += 2;
                         break;
                     }
 
                     case 0x00A: { //FX0A: A key press is awaited, and then stored in VX.
-                        boolean keyPress = false;
 
                         int x = (opcode & 0x0F00) >> 8;
                         for (int i = 0; i < keys.length; i++) {
                             if (keys[i] == 1) {
                                 V[x] = (char) i;
-                                keyPress = true;
+                                pc += 2;
                                 break;
                             }
                         }
 
-                        if (!keyPress){
-                            return;
-                        }
-
-                        pc += 2;
                         System.out.println("Awaiting key press to be stored in V[" + x + "]");
                         break;
                     }
 
                     case 0x015: { //FX15: Sets the delay timer to VX
                         int x = (opcode & 0x0F00) >> 8;
-                        delay_timer = V[x];
+                        delay_timer = (byte) V[x];
+
                         System.out.println("Setting delay_timer to V[" + x + "] = " + (int) V[x]);
                         pc += 2;
                         break;
@@ -500,7 +620,8 @@ public class Chip {
 
                     case 0x018: { //FX18: Sets the sound timer to VX
                         int x = (opcode & 0x0F00) >> 8;
-                        sound_timer = V[x];
+                        sound_timer = (byte) V[x];
+
                         System.out.println("Setting sound_timer to V[" + x + "] = " + (int) V[x]);
                         pc += 2;
                         break;
@@ -509,7 +630,8 @@ public class Chip {
                     case 0x01E: { //FX1E: Adds VX to I. VF is not affected. (or maybe yes?)
                         int x = (opcode & 0x0F00) >> 8;
                         V[0xF] = (char) ((I + V[x] > 0xfff) ? 1 : 0);
-                        I = (char) (I + V[x]);
+                        I = (short) (I + V[x]);
+
                         System.out.println("Adding V[" + x + "] with the value of " + (int) V[x] + " to I");
                         pc += 2;
                         break;
@@ -518,7 +640,8 @@ public class Chip {
                     case 0x029: { //FX29: Sets I to the location of the sprite for the character VX (Fontset)
                         int x = (opcode & 0x0F00) >> 8;
                         int character = V[x];
-                        I = (char) (0x050 + (character * 5));
+                        I = (short) (0x050 + (character * 5));
+
                         System.out.println("Setting I to Character V[" + x + "] = " + (int) V[x] + " Offset to 0x" + Integer.toHexString(I).toUpperCase());
                         pc += 2;
                         break;
@@ -539,6 +662,7 @@ public class Chip {
                         memory[I] = (char) hundreds;
                         memory[I + 1] = (char) tens;
                         memory[I + 2] = (char) value;
+
                         System.out.println("Storing Binary-Coded Decimal V[" + x + "] = " + value + " as {" + hundreds + ", " + tens + ", " + value + "}");
                         pc += 2;
                         break;
@@ -551,7 +675,9 @@ public class Chip {
                         }
 
                         //Nell'interprete originale, I viene modificato
-                        I += x + 1;
+                        //ma useremo il comportamento delle versioni successive (SUPER CHIP-8)
+                        //I += x + 1;
+
                         System.out.println("Storing V[0] to V[" + x + "] to the values of memory[0x" + Integer.toHexString(I & 0xFFFF).toUpperCase() + "]");
                         pc += 2;
                         break;
@@ -562,15 +688,42 @@ public class Chip {
                         for (int i = 0; i <= x; i++) {
                             V[i] = memory[I + i];
                         }
+
+                        //Nell'interprete originale, I viene modificato
+                        //ma useremo il comportamento delle versioni successive (SUPER CHIP-8)
+                        //I += x + 1;
+
                         System.out.println("Setting V[0] to V[" + x + "] to the values of memory[0x" + Integer.toHexString(I & 0xFFFF).toUpperCase() + "]");
-                        I = (char) (I + x + 1);
+                        pc += 2;
+                        break;
+                    }
+
+                    case 0x094: { //FX94: COSMAC ELF: Load I with the font sprite of the 6-bit ASCII value found in VX; V0 is set to the symbol length
+                        int x = (opcode & 0x0F00) >> 8;
+
+                        int c = V[x]*3 +0x100;
+
+                        int ab = memory[c];
+                        int cd = memory[c + 1];
+                        int ef = memory[c + 2];
+
+                        memory[0x1C0] = memory[0xF0 + (ef & 0xF)];
+                        memory[0x1C1] = memory[0xF0 + (cd >> 4)];
+                        memory[0x1C2] = memory[0xF0 + (cd & 0xF)];
+                        memory[0x1C3] = memory[0xF0 + (ab >> 4)];
+                        memory[0x1C4] = memory[0xF0 + (ab & 0xF)];
+
+                        V[0] = (char) (ef >> 4);
+
+                        I = 0x1C0;
+
+                        System.out.println("COSMAC ELF: Loading I with font sprite from the value of V[" + x + "]");
                         pc += 2;
                         break;
                     }
 
                     default:
-                        System.err.println("Unsupported Opcode!");
-                        System.exit(0);
+                        unsupportedOpcode();
                         break;
                 }
                 break;
@@ -578,8 +731,7 @@ public class Chip {
 
 
             default:
-                System.err.println("Unsupported Opcode!");
-                System.exit(0);
+                unsupportedOpcode();
                 break;
         }
 
@@ -591,6 +743,11 @@ public class Chip {
         if (sound_timer == 1) {
             doSound = true;
         }
+    }
+
+    private void unsupportedOpcode(){
+        System.err.println("Unsupported Opcode!");
+        System.exit(0);
     }
 
     public byte[] getDisplay() {
