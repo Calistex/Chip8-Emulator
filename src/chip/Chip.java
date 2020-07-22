@@ -255,7 +255,7 @@ public class Chip {
                         }
                         V[x] = (char) ((V[x] + V[y]) & 0xFF);
                         pc += 2;
-                        System.out.println("Adding V[" + x + "] to V[" + y + "] = " + (int) ((V[x] + V[y]) & 0xFF) + ", apply Carry if needed");
+                        System.out.println("Adding V[" + x + "] to V[" + y + "] = " + ((V[x] + V[y]) & 0xFF) + ", apply Carry if needed");
                         break;
                     }
 
@@ -603,13 +603,15 @@ public class Chip {
                 try {
                     input.close();
                 } catch (IOException ex) {
+                    ex.printStackTrace();
+                    System.exit(0);
                 }
             }
         }
     }
 
     public void loadProgram(File file) {
-        if(file == null){
+        if (file == null) {
             System.err.println("File not found");
             System.exit(0);
         }

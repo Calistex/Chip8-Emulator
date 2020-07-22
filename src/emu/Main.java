@@ -62,21 +62,25 @@ public class Main extends Thread {
     }
 
     public void playSound() {
-        try {
-            File yourFile = new File("./beep.wav");
-            AudioInputStream stream;
-            AudioFormat format;
-            DataLine.Info info;
-            Clip clip;
+        new Thread("Audio thread") {
+            public void run() {
+                try {
+                    File audioFile = new File("./beep.wav");
+                    AudioInputStream stream;
+                    AudioFormat format;
+                    DataLine.Info info;
+                    Clip clip;
 
-            stream = AudioSystem.getAudioInputStream(yourFile);
-            format = stream.getFormat();
-            info = new DataLine.Info(Clip.class, format);
-            clip = (Clip) AudioSystem.getLine(info);
-            clip.open(stream);
-            clip.start();
-        } catch (Exception e) {
-            //whatevers
-        }
+                    stream = AudioSystem.getAudioInputStream(audioFile);
+                    format = stream.getFormat();
+                    info = new DataLine.Info(Clip.class, format);
+                    clip = (Clip) AudioSystem.getLine(info);
+                    clip.open(stream);
+                    clip.start();
+                } catch (Exception e) {
+                    //whatevers
+                }
+            }
+        }.start();
     }
 }

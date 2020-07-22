@@ -4,10 +4,7 @@ import chip.Chip;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.io.File;
 
 public class ChipFrame extends JFrame implements KeyListener {
@@ -24,7 +21,7 @@ public class ChipFrame extends JFrame implements KeyListener {
         setPreferredSize(new Dimension(620, 320));
         pack();
         setPreferredSize(new Dimension(640 + getInsets().left + getInsets().right,
-                320 + getInsets().top + getInsets().bottom));
+                343 + getInsets().top + getInsets().bottom));
 
         panel = new ChipPanel(chip);
         setLayout(new BorderLayout());
@@ -38,45 +35,35 @@ public class ChipFrame extends JFrame implements KeyListener {
         JMenuItem audioMenuItem = new JCheckBoxMenuItem("Audio Enabled");
         audioEnabled = true;
         audioMenuItem.setSelected(true);
-        audioMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                audioMenuItem.setSelected(!audioEnabled);
-                audioEnabled = !audioEnabled;
-            }
-        });
+        audioMenuItem.addActionListener(
+                (event) -> {
+                    audioMenuItem.setSelected(!audioEnabled);
+                    audioEnabled = !audioEnabled;
+                }
+        );
         audioMenuItem.setMnemonic(KeyEvent.VK_M);
         audioMenuItem.setAccelerator(KeyStroke.getKeyStroke(
-                KeyEvent.VK_M, ActionEvent.ALT_MASK));
+                KeyEvent.VK_M, InputEvent.ALT_MASK));
         menu.add(audioMenuItem);
 
         menu.addSeparator();
 
         JMenuItem pauseMenuItem = new JMenuItem("Pause/Resume",
                 KeyEvent.VK_T);
-        pauseMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                emulationPaused = !emulationPaused;
-            }
-        });
-
-        //Setting the mnemonic after creation time:
+        pauseMenuItem.addActionListener(
+                (event) -> emulationPaused = !emulationPaused
+        );
         pauseMenuItem.setMnemonic(KeyEvent.VK_P);
         pauseMenuItem.setAccelerator(KeyStroke.getKeyStroke(
-                KeyEvent.VK_P, ActionEvent.ALT_MASK));
+                KeyEvent.VK_P, InputEvent.ALT_MASK));
         menu.add(pauseMenuItem);
 
         JMenuItem exitMenuItem = new JMenuItem("Exit",
                 KeyEvent.VK_T);
-        exitMenuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
+        exitMenuItem.addActionListener(
+                (event) -> System.exit(0)
+        );
         menu.add(exitMenuItem);
-
 
         setJMenuBar(menuBar);
 
