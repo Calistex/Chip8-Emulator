@@ -15,4 +15,4 @@ The video output is handled by Swing. Sound is working.
 
 ## Roadmap
 - Changing game from the emulator menu
-- Enhancing emulation (some games are slow or badly emulated)
+- Enhancing emulation (some games are slow or incorrectly emulated)
