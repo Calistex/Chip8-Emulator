@@ -12,6 +12,7 @@ The video output is handled by Swing. Sound is working.
 - File chooser when the emulator starts
 - Pause button to pause and resume the game (Alt + P)
 - Sound control to enable/disable it (Alt + M)
+- Reset button
 
 ## Roadmap
 - Changing game from the emulator menu
