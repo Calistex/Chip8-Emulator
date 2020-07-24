@@ -17,17 +17,34 @@ public class ChipFrame extends JFrame implements KeyListener {
     private boolean emulationPaused;
     private boolean resetGame;
 
+
+    private int screenWidth = 640;
+    private int screenHeight = 343;
+
     public ChipFrame(Chip chip) {
         setPreferredSize(new Dimension(620, 320));
         pack();
-        setPreferredSize(new Dimension(640 + getInsets().left + getInsets().right,
-                343 + getInsets().top + getInsets().bottom));
+        setPreferredSize(new Dimension(screenWidth + getInsets().left + getInsets().right,
+                screenHeight + getInsets().top + getInsets().bottom));
+
+        centerWindow();
 
         panel = new ChipPanel(chip);
         setLayout(new BorderLayout());
         add(panel, BorderLayout.CENTER);
 
+        /*
+            Menu
+         */
         JMenuBar menuBar = new JMenuBar();
+
+        /*
+            Main Menu
+            - Audio
+            - Resume/Pause
+            - Reset
+            - Exit
+         */
         JMenu menu = new JMenu("Menu");
         menu.setMnemonic(KeyEvent.VK_A);
         menuBar.add(menu);
@@ -74,6 +91,41 @@ public class ChipFrame extends JFrame implements KeyListener {
                 (event) -> System.exit(0)
         );
         menu.add(exitMenuItem);
+
+        /*
+            Windows size
+            - x1 (pixel scale 10)
+            - x2 (pixel scale 20)
+         */
+        JMenu scaleMenu = new JMenu("Window size");
+        menuBar.add(scaleMenu);
+
+        JRadioButtonMenuItem rbMenuItem;
+        ButtonGroup group = new ButtonGroup();
+        rbMenuItem = new JRadioButtonMenuItem("x1");
+        rbMenuItem.setSelected(true);
+        rbMenuItem.setMnemonic(KeyEvent.VK_R);
+        rbMenuItem.addActionListener(e -> {
+            panel.setScale(10);
+            setPreferredSize(new Dimension(screenWidth + getInsets().left + getInsets().right,
+                    screenHeight + getInsets().top + getInsets().bottom));
+            pack();
+            centerWindow();
+        });
+        group.add(rbMenuItem);
+        scaleMenu.add(rbMenuItem);
+
+        rbMenuItem = new JRadioButtonMenuItem("x2");
+        rbMenuItem.addActionListener(e -> {
+            panel.setScale(20);
+            setPreferredSize(new Dimension((screenWidth * 2 + getInsets().left + getInsets().right),
+                    (screenHeight * 2 + getInsets().top + getInsets().bottom)));
+            pack();
+            centerWindow();
+        });
+        group.add(rbMenuItem);
+        scaleMenu.add(rbMenuItem);
+
 
         setJMenuBar(menuBar);
 
@@ -179,6 +231,15 @@ public class ChipFrame extends JFrame implements KeyListener {
         }
     }
 
+    private void centerWindow() {
+        //Center window
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (int) ((dimension.getWidth() - getWidth()) / 2);
+        int y = (int) ((dimension.getHeight() - getHeight()) / 2);
+        setLocation(x, y);
+        setLocationRelativeTo(null);
+    }
+
     public boolean isAudioEnabled() {
         return audioEnabled;
     }
@@ -187,11 +248,11 @@ public class ChipFrame extends JFrame implements KeyListener {
         return emulationPaused;
     }
 
-    public boolean resetGame(){
+    public boolean resetGame() {
         return resetGame;
     }
 
-    public void setGameAsReset(){
+    public void setGameAsReset() {
         resetGame = false;
     }
 }

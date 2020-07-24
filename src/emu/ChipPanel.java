@@ -8,9 +8,11 @@ import java.awt.*;
 public class ChipPanel extends JPanel {
 
     private Chip chip;
+    private int scale;
 
-    public ChipPanel(Chip chip){
+    public ChipPanel(Chip chip) {
         this.chip = chip;
+        this.scale = 10;
     }
 
     public void paint(Graphics g){
@@ -25,7 +27,11 @@ public class ChipPanel extends JPanel {
             int x = (i % 64);
             int y = (int)Math.floor(i / 64);
 
-            g.fillRect(x * 10, y * 10, 10, 10 );
+            g.fillRect(x * scale, y * scale, scale, scale );
         }
+    }
+
+    public void setScale(int x){
+        this.scale = x;
     }
 }

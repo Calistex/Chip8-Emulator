@@ -122,6 +122,11 @@ public class Chip {
         switch (opcode & 0xF000) {
             case 0x0000: {
                 switch (opcode & 0x00FF) {
+//                    case 0x00C0: {
+//                        int N = (opcode & 0x000F);
+//                        break;
+//                    }
+
                     case 0x00E0: //00E0: Clears the screen.
                         for (int i = 0; i < display.length; i++) {
                             display[i] = 0;
