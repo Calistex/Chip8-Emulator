@@ -20,14 +20,14 @@ Every game is controlled by different keys.
 
 ## Added features
 - CHIP-8 Extended Opcodes (COSMAC ELF)
-- File chooser when the emulator starts
+- Partial implementation of SCHIP-8 Opcodes (most roms will probably not work)
+- File chooser in the menu, so you can change game whenever you like
 - Pause button to pause and resume the game (Alt + P)
 - Sound control to enable/disable it (Alt + M)
 - Reset button
 
 ## Roadmap
 - Adding SUPER CHIP-8 Opcodes
-- Changing game from the emulator menu
 - Enhancing emulation (some games are slow or incorrectly emulated)
 
 ## References
