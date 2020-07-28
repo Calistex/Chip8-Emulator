@@ -24,10 +24,17 @@ public class ChipPanel extends JPanel {
                 g.setColor(Color.WHITE);
             }
 
-            int x = (i % 64);
-            int y = (int)Math.floor(i / 64);
+            if(chip.isInSuperMode()){
+                int x = (i % 128);
+                int y = (int)Math.floor(i / 128);
 
-            g.fillRect(x * scale, y * scale, scale, scale );
+                g.fillRect(x * scale/2, y * scale/2, scale/2, scale/2);
+            } else {
+                int x = (i % 64);
+                int y = (int)Math.floor(i / 64);
+
+                g.fillRect(x * scale, y * scale, scale, scale );
+            }
         }
     }
 

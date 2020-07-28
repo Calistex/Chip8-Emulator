@@ -21,7 +21,7 @@ public class ChipFrame extends JFrame implements KeyListener {
     private int screenWidth = 640;
     private int screenHeight = 343;
 
-    public ChipFrame(Chip chip) {
+    public ChipFrame(Chip chip, Main main) {
         setPreferredSize(new Dimension(620, 320));
         pack();
         setPreferredSize(new Dimension(screenWidth + getInsets().left + getInsets().right,
@@ -40,6 +40,7 @@ public class ChipFrame extends JFrame implements KeyListener {
 
         /*
             Main Menu
+            - Open file
             - Audio
             - Resume/Pause
             - Reset
@@ -48,6 +49,30 @@ public class ChipFrame extends JFrame implements KeyListener {
         JMenu menu = new JMenu("Menu");
         menu.setMnemonic(KeyEvent.VK_A);
         menuBar.add(menu);
+
+        JMenuItem openFileMenuItem = new JMenuItem("Open file",
+                KeyEvent.VK_T);
+        openFileMenuItem.addActionListener(
+                (event) -> {
+                    emulationPaused = true;
+                    File file = openFile();
+                    if(file != null) {
+                        emulationPaused = false;
+                        chip.init();
+                        chip.loadProgram(file);
+                        main.start();
+                    }
+                    emulationPaused = false;
+                }
+        );
+        openFileMenuItem.setMnemonic(KeyEvent.VK_O);
+        openFileMenuItem.setAccelerator(KeyStroke.getKeyStroke(
+                KeyEvent.VK_O, InputEvent.ALT_MASK));
+        menu.add(openFileMenuItem);
+
+
+        menu.addSeparator();
+
 
         JMenuItem audioMenuItem = new JCheckBoxMenuItem("Audio Enabled");
         audioEnabled = true;
@@ -63,7 +88,9 @@ public class ChipFrame extends JFrame implements KeyListener {
                 KeyEvent.VK_M, InputEvent.ALT_MASK));
         menu.add(audioMenuItem);
 
+
         menu.addSeparator();
+
 
         JMenuItem pauseMenuItem = new JMenuItem("Pause/Resume",
                 KeyEvent.VK_P);
@@ -75,6 +102,7 @@ public class ChipFrame extends JFrame implements KeyListener {
                 KeyEvent.VK_P, InputEvent.ALT_MASK));
         menu.add(pauseMenuItem);
 
+
         JMenuItem resetMenuItem = new JMenuItem("Reset",
                 KeyEvent.VK_T);
         resetMenuItem.addActionListener(
@@ -84,6 +112,7 @@ public class ChipFrame extends JFrame implements KeyListener {
         resetMenuItem.setAccelerator(KeyStroke.getKeyStroke(
                 KeyEvent.VK_T, InputEvent.ALT_MASK));
         menu.add(resetMenuItem);
+
 
         JMenuItem exitMenuItem = new JMenuItem("Exit",
                 KeyEvent.VK_T);

@@ -11,6 +11,9 @@ public class Chip {
     //I registri del Chip8
     private char[] V;
 
+    //I flag registers del SChip8
+    private char[] flag;
+
     //Puntatore agli indirizzi
     private short I;
 
@@ -30,10 +33,14 @@ public class Chip {
 
     private boolean needRedraw;
     private boolean doSound;
+    private boolean stopEmulation;
+
+    private boolean superMode;
 
     public void init() {
         memory = new char[4096];
         V = new char[16];
+        flag = new char[8];
         I = 0x0;
 
         //Il program counter inizia a 0x200 (512 bytes)
@@ -61,6 +68,7 @@ public class Chip {
 
     public void reset() {
         V = new char[16];
+        flag = new char[8];
         I = 0x0;
 
         //Il program counter inizia a 0x200 (512 bytes)
@@ -121,32 +129,87 @@ public class Chip {
          */
         switch (opcode & 0xF000) {
             case 0x0000: {
-                switch (opcode & 0x00FF) {
-//                    case 0x00C0: {
-//                        int N = (opcode & 0x000F);
-//                        break;
-//                    }
+                switch (opcode & 0x00F0) {
+                    case 0x00C0: { //00CN: SCHIP-8: (scroll-down n) Scroll the display down by 0 to 15 pixels.
+                        int n = (opcode & 0x000F);
+                        byte temp[];
+                        int startingIndex;
 
-                    case 0x00E0: //00E0: Clears the screen.
-                        for (int i = 0; i < display.length; i++) {
-                            display[i] = 0;
+                        if (superMode) {
+                            startingIndex = n * 128;
+                            temp = new byte[128 * 64];
+                        } else {
+                            startingIndex = n * 64;
+                            temp = new byte[64 * 32];
                         }
 
-                        System.out.println("Screen cleared");
-                        needRedraw = true;
+                        for (int i = 0; i < startingIndex; i++) {
+                            temp[i] = 0;
+                        }
+
+                        for (int j = 0; startingIndex + j < temp.length; j++) {
+                            temp[j + startingIndex] = display[j];
+                        }
+
+                        display = temp;
+
+                        System.out.println("SCHIP-8: Scroll the display down by " + n + " pixels.");
                         pc += 2;
                         break;
+                    }
 
-                    case 0x00EE: //00EE: Returns from a subroutine.
-                        stackPointer--;
-                        pc = stack[stackPointer];
+                    case 0x00E0:
+                        switch (opcode & 0x00FF) {
+                            case 0x00E0: //00E0: Clears the screen.
+                                for (int i = 0; i < display.length; i++) {
+                                    display[i] = 0;
+                                }
 
-                        System.out.println("Returning to " + Integer.toHexString(pc).toUpperCase());
-                        pc += 2;
+                                System.out.println("Screen cleared");
+                                needRedraw = true;
+                                pc += 2;
+                                break;
+
+                            case 0x00EE: //00EE: Returns from a subroutine.
+                                stackPointer--;
+                                pc = stack[stackPointer];
+
+                                System.out.println("Returning to " + Integer.toHexString(pc).toUpperCase());
+                                pc += 2;
+                                break;
+
+                            default:
+                                unsupportedOpcode();
+                                break;
+                        }
                         break;
 
-                    default:
-                        unsupportedOpcode();
+                    case 0x00F0:
+                        switch (opcode & 0x00FF) {
+                            case 0x00FD: //00FD: SCHIP-8: Exit the interpreter.
+                                stopEmulation = true;
+                                break;
+
+                            case 0x00FE: //00FE: SCHIP-8: Disable high resolution graphics mode and return to 64x32.
+                                display = new byte[64 * 32];
+                                superMode = false;
+
+                                System.out.println("SCHIP-8: Lores mode enabled");
+                                pc += 2;
+                                break;
+
+                            case 0x00FF: //00FF: SCHIP-8: Enable 128x64 high resolution graphics mode.
+                                display = new byte[128 * 64];
+                                superMode = true;
+
+                                System.out.println("SCHIP-8: Hires mode enabled");
+                                pc += 2;
+                                break;
+
+                            default:
+                                unsupportedOpcode();
+                                break;
+                        }
                         break;
                 }
                 break;
@@ -197,7 +260,7 @@ public class Chip {
             }
 
             case 0x5000: {
-                switch (opcode & 0x000F){
+                switch (opcode & 0x000F) {
                     case 0x0000: { //5XY0: Skips the next instruction if VX equals VY.
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
@@ -449,7 +512,7 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
 
-                        V[0xF] =(char) (V[x] % V[y]);
+                        V[0xF] = (char) (V[x] % V[y]);
                         V[x] = (char) (V[x] / V[y]);
 
                         System.out.println("COSMAC ELF: Setting V[" + x + "] as (V[" + x + "] / (V[" + y + "]), and V[0xF] as the remainder");
@@ -461,7 +524,7 @@ public class Chip {
                         int x = (opcode & 0x0F00) >> 8;
                         int y = (opcode & 0x00F0) >> 4;
 
-                        int word =  ((V[x] << 8) | V[y]);
+                        int word = ((V[x] << 8) | V[y]);
 
                         int one = (word - (word % 10000)) / 10000;
                         word -= one * 10000;
@@ -525,30 +588,64 @@ public class Chip {
 
                 V[0xF] = 0;
 
-                for (int _y = 0; _y < height; _y++) {
-                    int line = memory[I + _y];
-                    for (int _x = 0; _x < 8; _x++) {
-                        int pixel = line & (0x80 >> _x);
-                        if (pixel != 0) {
-                            int totalX = x + _x;
-                            int totalY = y + _y;
+                if (superMode) {
+                    //DXY0: Draw a sprite (X, Y) size (8, 16). Sprite is located at I
+                    for (int _y = 0; _y < 16; _y++) {
+                        int line = memory[I + _y];
 
-                            //Codice di wrapping, per evitare che
-                            //l'indice vada outofbounds
-                            totalX = totalX % 64;
-                            totalY = totalY % 32;
+                        for (int _x = 0; _x < 16; _x++) {
+                            int pixel = line & (0x80 >> _x);
+                            if (pixel != 0) {
+                                int totalX = x + _x;
+                                int totalY = y + _y;
 
-                            int index = (totalY * 64) + totalX;
+                                //Per il SCHIP-8 non c'è wrapping
+//                                    totalX = totalX % 128;
+//                                    totalY = totalY % 64;
 
-                            if (display[index] == 1)
-                                V[0xF] = 1;
+                                int index = (totalY * 128) + totalX;
 
-                            display[index] ^= 1;
+                                if(index >= display.length){
+                                    System.err.println("ArrayIndexOutOfBoundsException while drawing screen: " + index);
+                                    System.exit(0);
+                                }
+
+                                if (display[index] == 1)
+                                    V[0xF] = 1;
+
+                                display[index] ^= 1;
+                            }
+                        }
+
+                    }
+                    System.out.println("SCHIP-8: Drawing at V[" + ((opcode & 0x0F00) >> 8) + "] = " + x + ", V[" + ((opcode & 0x00F0) >> 4) + "] = " + y);
+                } else {
+                    //DXYN: Draw a sprite (X, Y) size (8, N). Sprite is located at I
+                    for (int _y = 0; _y < height; _y++) {
+                        int line = memory[I + _y];
+                        for (int _x = 0; _x < 8; _x++) {
+                            int pixel = line & (0x80 >> _x);
+                            if (pixel != 0) {
+                                int totalX = x + _x;
+                                int totalY = y + _y;
+
+                                //Codice di wrapping, per evitare che
+                                //l'indice vada outofbounds
+                                totalX = totalX % 64;
+                                totalY = totalY % 32;
+
+                                int index = (totalY * 64) + totalX;
+
+                                if (display[index] == 1)
+                                    V[0xF] = 1;
+
+                                display[index] ^= 1;
+                            }
                         }
                     }
+                    System.out.println("Drawing at V[" + ((opcode & 0x0F00) >> 8) + "] = " + x + ", V[" + ((opcode & 0x00F0) >> 4) + "] = " + y);
                 }
 
-                System.out.println("Drawing at V[" + ((opcode & 0x0F00) >> 8) + "] = " + x + ", V[" + ((opcode & 0x00F0) >> 4) + "] = " + y);
                 pc += 2;
                 needRedraw = true;
                 break;
@@ -569,7 +666,7 @@ public class Chip {
                         break;
                     }
 
-                    case 0x00A1: //EXA1: Skips the next instruction if the key stored in VX isn't pressed.
+                    case 0x00A1: { //EXA1: Skips the next instruction if the key stored in VX isn't pressed.
                         int x = (opcode & 0x0F00) >> 8;
                         int key = V[x];
                         if (keys[key] == 0) {
@@ -580,6 +677,7 @@ public class Chip {
                             pc += 2;
                         }
                         break;
+                    }
 
                     default:
                         unsupportedOpcode();
@@ -634,7 +732,7 @@ public class Chip {
 
                     case 0x01E: { //FX1E: Adds VX to I. VF is not affected. (or maybe yes?)
                         int x = (opcode & 0x0F00) >> 8;
-                        V[0xF] = (char) ((I + V[x] > 0xfff) ? 1 : 0);
+                        //V[0xF] = (char) ((I + V[x] > 0xfff) ? 1 : 0);
                         I = (short) (I + V[x]);
 
                         System.out.println("Adding V[" + x + "] with the value of " + (int) V[x] + " to I");
@@ -681,7 +779,11 @@ public class Chip {
 
                         //Nell'interprete originale, I viene modificato
                         //ma useremo il comportamento delle versioni successive (SUPER CHIP-8)
-                        //I += x + 1;
+                        //
+                        //Usando la variabile superMode, posso cambiare comportamento a seconda della rom selezionata
+                        if (!superMode) {
+                            I += x + 1;
+                        }
 
                         System.out.println("Storing V[0] to V[" + x + "] to the values of memory[0x" + Integer.toHexString(I & 0xFFFF).toUpperCase() + "]");
                         pc += 2;
@@ -696,9 +798,35 @@ public class Chip {
 
                         //Nell'interprete originale, I viene modificato
                         //ma useremo il comportamento delle versioni successive (SUPER CHIP-8)
-                        //I += x + 1;
+                        //
+                        //Usando la variabile superMode, posso cambiare comportamento a seconda della rom selezionata
+                        if (!superMode) {
+                            I += x + 1;
+                        }
 
                         System.out.println("Setting V[0] to V[" + x + "] to the values of memory[0x" + Integer.toHexString(I & 0xFFFF).toUpperCase() + "]");
+                        pc += 2;
+                        break;
+                    }
+
+                    case 0x075: { //FX75: SCHIP-8: Save v0-vX to flag registers.
+                        int x = (opcode & 0x0F00) >> 8;
+                        for (int i = 0; i <= x; i++) {
+                            flag[i] = V[i];
+                        }
+
+                        System.out.println("SCHIP-8: Setting flag[0] to flag[" + x + "] to the values of V[0] to V[" + x + "]");
+                        pc += 2;
+                        break;
+                    }
+
+                    case 0x085: { //FX85: Restore v0-vX from flag registers.
+                        int x = (opcode & 0x0F00) >> 8;
+                        for (int i = 0; i <= x; i++) {
+                            V[i] = flag[i];
+                        }
+
+                        System.out.println("SCHIP-8: Setting V[0] to V[" + x + "] to the values of flag[0] to flag[" + x + "]");
                         pc += 2;
                         break;
                     }
@@ -706,7 +834,7 @@ public class Chip {
                     case 0x094: { //FX94: COSMAC ELF: Load I with the font sprite of the 6-bit ASCII value found in VX; V0 is set to the symbol length
                         int x = (opcode & 0x0F00) >> 8;
 
-                        int c = V[x]*3 +0x100;
+                        int c = V[x] * 3 + 0x100;
 
                         int ab = memory[c];
                         int cd = memory[c + 1];
@@ -750,7 +878,7 @@ public class Chip {
         }
     }
 
-    private void unsupportedOpcode(){
+    private void unsupportedOpcode() {
         System.err.println("Unsupported Opcode!");
         System.exit(0);
     }
@@ -773,6 +901,14 @@ public class Chip {
 
     public void removeSoundFlag() {
         doSound = false;
+    }
+
+    public boolean isEmulationStopped() {
+        return stopEmulation;
+    }
+
+    public boolean isInSuperMode() {
+        return superMode;
     }
 
     public void loadFontset() {

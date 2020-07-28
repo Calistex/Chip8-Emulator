@@ -13,11 +13,7 @@ public class Main extends Thread {
     public Main() {
         chip8 = new Chip();
         chip8.init();
-//        String filename = "tetris";
-//        chip8.loadProgram("./" + filename);
-        frame = new ChipFrame(chip8);
-        File file = frame.openFile();
-        chip8.loadProgram(file);
+        frame = new ChipFrame(chip8, this);
     }
 
     public void run() {
@@ -31,6 +27,10 @@ public class Main extends Thread {
 
                 chip8.setKeyBuffer(frame.getKeyBuffer());
                 chip8.run();
+
+                if(chip8.isEmulationStopped()){
+                    return;
+                }
 
                 if (chip8.needsSound()) {
                     //Qui dovrebbe fare BEEP
@@ -51,14 +51,17 @@ public class Main extends Thread {
                     e.printStackTrace();
                 }
             } else {
-                System.out.println("PAUSED");
+                try {
+                    Thread.sleep(2);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
     public static void main(String[] args) {
         Main main = new Main();
-        main.start();
     }
 
     public Chip getChip8() {
